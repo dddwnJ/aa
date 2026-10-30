@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Instagram</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- 로고 폰트 -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Grand+Hotel&display=swap" rel="stylesheet">
+
+  <style>
+    .insta-logo { font-family: 'Grand Hotel', cursive; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    .carousel-container {
+      scroll-snap-type: x mandatory;
+      scroll-behavior: smooth;
+    }
+    .carousel-item {
+      scroll-snap-align: start;
+    }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-8px); }
+      40%, 80% { transform: translateX(8px); }
+    }
+    .shake-anim {
+      animation: shake 0.35s ease-in-out;
+    }
+  </style>
+</head>
+<body class="bg-gray-100 flex justify-center text-gray-900 select-none">
+
+  <!-- ============================================================ -->
+  <!-- [SECURITY] 비밀번호 잠금 화면 (0705)                         -->
+  <!-- ============================================================ -->
+  <div id="lock-screen" class="fixed inset-0 z-50 bg-white flex flex-col items-center justify-between py-12 px-6 max-w-md mx-auto shadow-2xl transition-opacity duration-300">
+    <div class="flex flex-col items-center w-full pt-4">
+      <span class="insta-logo text-5xl font-bold mb-4 tracking-wide text-gray-900">Instagram</span>
+      <div class="w-14 h-14 rounded-full bg-gray-50 border border-gray-200 flex items-center justify-center mb-4 text-gray-700 shadow-sm">
+        <i data-lucide="lock" class="w-6 h-6 stroke-[1.8]"></i>
+      </div>
+      <h2 class="text-sm font-bold text-gray-800 mb-1">비밀번호를 입력하세요</h2>
+      <p id="lock-error-msg" class="text-xs text-red-500 font-semibold h-4 transition-opacity opacity-0">비밀번호가 올바르지 않습니다.</p>
+
+      <div id="pin-dots-container" class="flex items-center gap-5 my-6">
+        <div class="pin-dot w-3.5 h-3.5 rounded-full border-2 border-gray-300 transition-all"></div>
+        <div class="pin-dot w-3.5 h-3.5 rounded-full border-2 border-gray-300 transition-all"></div>
+        <div class="pin-dot w-3.5 h-3.5 rounded-full border-2 border-gray-300 transition-all"></div>
+        <div class="pin-dot w-3.5 h-3.5 rounded-full border-2 border-gray-300 transition-all"></div>
+      </div>
+    </div>
+
+    <!-- 숫자 키패드 -->
+    <div class="w-full max-w-[270px] grid grid-cols-3 gap-y-4 gap-x-6 pb-6">
+      <button onclick="pressPin('1')" class="w-16 h-16 rounded-full bg-gray-50 active:bg-gray-200 text-2xl font-semibold flex items-center justify-center mx-auto transition shadow-sm">1</button>
+      <button onclick="pressPin('2')" class="w-16 h-16 rounded-full bg-gray-50 active:bg-gray-200 text-2xl font-semibold flex items-center justify-center mx-auto transition shadow-sm">2</button>
+      <button onclick="pressPin('3')" class="w-16 h-16 rounded-full bg-gray-50 active:bg-gray-200 text-2xl font-semibold flex items-center justify-center mx-auto transition shadow-sm">3</button>
+      
+      <button onclick="pressPin('4')" class="w-16 h-16 rounded-full bg-gray-50 active:bg-gray-200 text-2xl font-semibold flex items-center justify-center mx-auto transition shadow-sm">4</button>
+      <button onclick="pressPin('5')" class="w-16 h-16 rounded-full bg-gray-50 active:bg-gray-200 text-2xl font-semibold flex items-center justify-center mx-auto transition shadow-sm">5</button>
+      <button onclick="pressPin('6')" class="w-16 h-16 rounded-full bg-gray-50 active:bg-gray-200 text-2xl font-semibold flex items-center justify-center mx-auto transition shadow-sm">6</button>
+      
+      <button onclick="pressPin('7')" class="w-16 h-16 rounded-full bg-gray-50 active:bg-gray-200 text-2xl font-semibold flex items-center justify-center mx-auto transition shadow-sm">7</button>
+      <button onclick="pressPin('8')" class="w-16 h-16 rounded-full bg-gray-50 active:bg-gray-200 text-2xl font-semibold flex items-center justify-center mx-auto transition shadow-sm">8</button>
+      <button onclick="pressPin('9')" class="w-16 h-16 rounded-full bg-gray-50 active:bg-gray-200 text-2xl font-semibold flex items-center justify-center mx-auto transition shadow-sm">9</button>
+      
+      <div></div>
+      <button onclick="pressPin('0')" class="w-16 h-16 rounded-full bg-gray-50 active:bg-gray-200 text-2xl font-semibold flex items-center justify-center mx-auto transition shadow-sm">0</button>
+      <button onclick="deletePin()" class="w-16 h-16 rounded-full active:bg-gray-100 flex items-center justify-center mx-auto transition text-gray-700">
+        <i data-lucide="delete" class="w-6 h-6 stroke-[1.8]"></i>
+      </button>
+    </div>
+  </div>
+
+
+  <!-- ============================================================ -->
+  <!-- [MAIN CONTAINER] 인스타그램 메인 앱 컨테이너                 -->
+  <!-- ============================================================ -->
+  <div id="main-app" class="w-full max-w-md min-h-screen bg-white border-x border-gray-200 flex flex-col relative pb-16">
+
+    <!-- ========================================== -->
+    <!-- [VIEW 1] 홈 피드 화면                     -->
+    <!-- ========================================== -->
+    <div id="view-home" class="flex flex-col flex-1">
+      <header class="sticky top-0 bg-white z-20 flex items-center justify-between px-4 py-3 border-b border-gray-100">
+        <span class="insta-logo text-3xl font-bold cursor-pointer">Instagram</span>
+        <div class="flex items-center gap-4">
+          <button class="hover:opacity-60 transition">
+            <i data-lucide="heart" class="w-6 h-6 stroke-[1.8]"></i>
+          </button>
+          <button class="hover:opacity-60 transition">
+            <i data-lucide="send" class="w-6 h-6 stroke-[1.8]"></i>
+          </button>
+        </div>
+      </header>
+
+      <!-- 스토리 바 (뷰어 전용) -->
+      <div class="flex items-center gap-4 px-4 py-3 overflow-x-auto no-scrollbar border-b border-gray-100">
+        <div class="flex flex-col items-center gap-1">
+          <div class="relative w-16 h-16 rounded-full p-[2px] bg-gradient-to-tr from-amber-500 to-fuchsia-600 flex items-center justify-center">
+            <div class="w-full h-full bg-white rounded-full p-[2px] overflow-hidden flex items-center justify-center">
+              <img class="user-avatar-img w-full h-full rounded-full object-cover hidden" alt="Avatar">
+              <div class="user-avatar-fallback w-full h-full rounded-full bg-gray-100 flex items-center justify-center">
+                <i data-lucide="user" class="w-8 h-8 text-gray-400"></i>
+              </div>
+            </div>
+          </div>
+          <span class="text-xs text-gray-600">내 스토리</span>
+        </div>
+      </div>
+
+      <!-- 메인 피드 목록 -->
+      <main class="flex-1 flex flex-col">
+        <div id="feed-container" class="flex flex-col divide-y divide-gray-100"></div>
+
+        <div id="empty-state" class="flex-1 flex flex-col items-center justify-center p-8 text-center my-auto hidden">
+          <div class="w-20 h-20 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center mb-4 text-gray-400">
+            <i data-lucide="camera" class="w-10 h-10"></i>
+          </div>
+          <h3 class="text-lg font-bold text-gray-800 mb-1">게시물이 없습니다</h3>
+        </div>
+      </main>
+    </div>
+
+
+    <!-- ========================================== -->
+    <!-- [VIEW 2] 내 프로필 화면                    -->
+    <!-- ========================================== -->
+    <div id="view-profile" class="hidden flex-col flex-1">
+      <header class="sticky top-0 bg-white z-20 flex items-center justify-between px-4 py-3 border-b border-gray-100">
+        <div class="flex items-center gap-1">
+          <span id="prof-header-username" class="font-bold text-lg">username</span>
+          <i data-lucide="chevron-down" class="w-4 h-4"></i>
+        </div>
+        <!-- 우측 상단 화면 잠그기 버튼 -->
+        <button onclick="lockAppNow()" title="화면 잠그기" class="p-1 text-gray-600 hover:text-black transition">
+          <i data-lucide="lock" class="w-5 h-5 stroke-[1.8]"></i>
+        </button>
+      </header>
+
+      <div class="px-4 pt-4 pb-2">
+        <div class="flex items-center justify-between mb-3">
+          <div class="relative w-20 h-20 rounded-full p-[2px] bg-gradient-to-tr from-amber-500 to-fuchsia-600 flex-shrink-0">
+            <div class="w-full h-full bg-white rounded-full p-[2px] overflow-hidden flex items-center justify-center">
+              <img class="user-avatar-img w-full h-full object-cover hidden" alt="Avatar">
+              <div class="user-avatar-fallback w-full h-full bg-gray-100 flex items-center justify-center">
+                <i data-lucide="user" class="w-10 h-10 text-gray-400"></i>
+              </div>
+            </div>
+          </div>
+
+          <!-- 팔로워 & 팔로잉 수치 -->
+          <div class="flex flex-1 justify-around text-center ml-4">
+            <div>
+              <div id="stat-posts-count" class="font-bold text-base">0</div>
+              <div class="text-xs text-gray-500">게시물</div>
+            </div>
+            <div>
+              <div id="stat-followers" class="font-bold text-base text-gray-900">10.4만</div>
+              <div class="text-xs text-gray-500">팔로워</div>
+            </div>
+            <div>
+              <div id="stat-following" class="font-bold text-base text-gray-900">6</div>
+              <div class="text-xs text-gray-500">팔로잉</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="text-xs flex flex-col gap-1 mb-4">
+          <span id="prof-display-name" class="font-bold text-sm text-gray-900">내 이름</span>
+          <p id="prof-display-bio" class="text-gray-800 whitespace-pre-line leading-relaxed">소개글이 없습니다.</p>
+          <a id="prof-display-link" href="#" target="_blank" class="text-blue-900 font-semibold flex items-center gap-1 hover:underline truncate hidden">
+            <i data-lucide="link" class="w-3 h-3 rotate-45"></i>
+            <span id="prof-display-link-text"></span>
+          </a>
+        </div>
+
+        <!-- 뷰어 전용 액션 버튼 (프로필 공유) -->
+        <div class="flex">
+          <button onclick="alert('프로필 링크가 복사되었습니다!')" class="w-full py-1.5 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 font-semibold text-xs rounded-lg transition">
+            프로필 공유
+          </button>
+        </div>
+      </div>
+
+      <!-- 스토리 하이라이트 영역 (신규 추가 버튼 제거, 등록된 것만 감상) -->
+      <div id="highlights-wrapper" class="px-4 py-3 border-b border-gray-100 hidden">
+        <div id="highlights-container" class="flex items-center gap-4 overflow-x-auto no-scrollbar">
+          <div id="highlights-list" class="flex items-center gap-4"></div>
+        </div>
+      </div>
+
+      <div class="flex border-b border-gray-200">
+        <button class="flex-1 py-2.5 flex justify-center border-b-2 border-black text-black">
+          <i data-lucide="grid" class="w-5 h-5"></i>
+        </button>
+        <button class="flex-1 py-2.5 flex justify-center text-gray-400 hover:text-gray-600">
+          <i data-lucide="contact" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div id="profile-grid" class="grid grid-cols-3 gap-0.5 pb-8"></div>
+      <div id="profile-empty-grid" class="flex flex-col items-center justify-center py-16 text-center text-gray-400">
+        <i data-lucide="camera" class="w-12 h-12 mb-2 stroke-[1.2]"></i>
+        <span class="text-sm font-semibold">게시물 없음</span>
+      </div>
+    </div>
+
+
+    <!-- ========================================== -->
+    <!-- [COMMON] 하단 네비게이션 바 (뷰어 전용 모드) -->
+    <!-- ========================================== -->
+    <nav class="fixed bottom-0 w-full max-w-md bg-white border-t border-gray-200 flex justify-around items-center py-3 z-30">
+      <button id="nav-btn-home" onclick="switchTab('home')" class="text-gray-900 transition">
+        <i data-lucide="home" class="w-6 h-6 stroke-[2.2]"></i>
+      </button>
+      <button class="text-gray-900 hover:opacity-60 transition">
+        <i data-lucide="search" class="w-6 h-6 stroke-[1.8]"></i>
+      </button>
+      <button class="text-gray-900 hover:opacity-60 transition">
+        <i data-lucide="film" class="w-6 h-6 stroke-[1.8]"></i>
+      </button>
+      <button class="text-gray-900 hover:opacity-60 transition">
+        <i data-lucide="heart" class="w-6 h-6 stroke-[1.8]"></i>
+      </button>
+      <button id="nav-btn-profile" onclick="switchTab('profile')" class="transition rounded-full p-[1px] border border-transparent">
+        <div class="w-6 h-6 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
+          <img class="user-avatar-img w-full h-full object-cover hidden" alt="Avatar">
+          <div class="user-avatar-fallback"><i data-lucide="user" class="w-4 h-4 text-gray-600"></i></div>
+        </div>
+      </button>
+    </nav>
+
+
+    <!-- ========================================== -->
+    <!-- [MODAL] 스토리 하이라이트 전체화면 뷰어     -->
+    <!-- ========================================== -->
+    <div id="highlight-viewer-modal" class="fixed inset-0 bg-black z-50 hidden flex flex-col items-center justify-center">
+      <div class="w-full max-w-md h-full relative flex flex-col justify-between p-4 bg-zinc-900">
+        <div class="w-full flex flex-col gap-2 z-10">
+          <div class="w-full h-1 bg-white/30 rounded-full overflow-hidden">
+            <div class="w-full h-full bg-white"></div>
+          </div>
+          <div class="flex items-center justify-between text-white">
+            <div class="flex items-center gap-2">
+              <div class="w-8 h-8 rounded-full overflow-hidden bg-gray-500 border border-white/50">
+                <img id="viewer-avatar" class="w-full h-full object-cover hidden" alt="User">
+              </div>
+              <span id="viewer-title" class="font-bold text-sm">하이라이트 이름</span>
+            </div>
+            <button onclick="closeHighlightViewer()" class="text-white hover:opacity-70 p-1">
+              <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="absolute inset-0 flex items-center justify-center overflow-hidden">
+          <img id="viewer-img" class="w-full h-full object-contain" alt="Story">
+        </div>
+
+        <div class="w-full flex justify-end z-10"></div>
+      </div>
+    </div>
+
+
+    <!-- ========================================== -->
+    <!-- [MODAL] 댓글 뷰어 모달 (읽기 전용)          -->
+    <!-- ========================================== -->
+    <div id="comments-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex flex-col justify-end">
+      <div class="bg-white rounded-t-3xl w-full max-w-md mx-auto h-[75vh] flex flex-col shadow-2xl relative overflow-hidden">
+        
+        <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100 relative">
+          <div class="w-8"></div>
+          <span class="font-bold text-sm text-gray-900">댓글</span>
+          <button onclick="closeCommentsModal()" class="text-gray-500 hover:text-black p-1">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+
+        <div id="comments-scroll-area" class="flex-1 overflow-y-auto p-4 flex flex-col divide-y divide-gray-100">
+          <div id="comments-caption-header" class="pb-3 flex gap-3 items-start"></div>
+          <div id="comments-list" class="pt-3 flex flex-col gap-4"></div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // ============================================================
+    // 비밀번호 검증 (0705)
+    // ============================================================
+    const APP_PASSCODE = "0705";
+    let enteredCode = "";
+    let isAppUnlocked = false;
+
+    function updatePinDotsUI() {
+      const dots = document.querySelectorAll('.pin-dot');
+      dots.forEach((dot, idx) => {
+        dot.className = (idx < enteredCode.length)
+          ? 'pin-dot w-3.5 h-3.5 rounded-full bg-black border-2 border-black scale-110 transition-all'
+          : 'pin-dot w-3.5 h-3.5 rounded-full border-2 border-gray-300 transition-all';
+      });
+    }
+
+    function pressPin(digit) {
+      if (enteredCode.length < 4) {
+        enteredCode += digit;
+        updatePinDotsUI();
+        if (enteredCode.length === 4) {
+          setTimeout(verifyPasscode, 150);
+        }
+      }
+    }
+
+    function deletePin() {
+      if (enteredCode.length > 0) {
+        enteredCode = enteredCode.slice(0, -1);
+        updatePinDotsUI();
+        document.getElementById('lock-error-msg').classList.add('opacity-0');
+      }
+    }
+
+    function verifyPasscode() {
+      if (enteredCode === APP_PASSCODE) {
+        isAppUnlocked = true;
+        const lockScreen = document.getElementById('lock-screen');
+        lockScreen.classList.add('opacity-0', 'pointer-events-none');
+        setTimeout(() => {
+          lockScreen.classList.add('hidden');
+        }, 300);
+      } else {
+        const container = document.getElementById('pin-dots-container');
+        const errorMsg = document.getElementById('lock-error-msg');
+        container.classList.add('shake-anim');
+        errorMsg.classList.remove('opacity-0');
+
+        setTimeout(() => {
+          container.classList.remove('shake-anim');
+          enteredCode = "";
+          updatePinDotsUI();
+        }, 400);
+      }
+    }
+
+    function lockAppNow() {
+      enteredCode = "";
+      updatePinDotsUI();
+      isAppUnlocked = false;
+      const lockScreen = document.getElementById('lock-screen');
+      lockScreen.classList.remove('hidden', 'opacity-0', 'pointer-events-none');
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if (isAppUnlocked) return;
+      if (e.key >= '0' && e.key <= '9') {
+        pressPin(e.key);
+      } else if (e.key === 'Backspace') {
+        deletePin();
+      }
+    });
+
+    // ============================================================
+    // 대용량 브라우저 데이터베이스 (IndexedDB 읽기 전용 로드)
+    // ============================================================
+    const DB_NAME = 'InstagramAppDB';
+    const DB_VERSION = 1;
+    let db = null;
+
+    function initIndexedDB() {
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open(DB_NAME, DB_VERSION);
+        req.onupgradeneeded = (e) => {
+          const database = e.target.result;
+          if (!database.objectStoreNames.contains('app_data')) {
+            database.createObjectStore('app_data');
+          }
+        };
+        req.onsuccess = (e) => {
+          db = e.target.result;
+          resolve(db);
+        };
+        req.onerror = (e) => reject(e);
+      });
+    }
+
+    function idbGet(key) {
+      return new Promise((resolve) => {
+        if (!db) return resolve(null);
+        const tx = db.transaction('app_data', 'readonly');
+        const store = tx.objectStore('app_data');
+        const req = store.get(key);
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => resolve(null);
+      });
+    }
+
+    function idbSet(key, value) {
+      return new Promise((resolve, reject) => {
+        if (!db) return reject('DB not open');
+        const tx = db.transaction('app_data', 'readwrite');
+        const store = tx.objectStore('app_data');
+        const req = store.put(value, key);
+        req.onsuccess = () => resolve();
+        req.onerror = (e) => reject(e);
+      });
+    }
+
+    // ==========================================
+    // 앱 기본 데이터 & 상태
+    // ==========================================
+    const defaultProfile = {
+      username: "my_daily_life",
+      name: "홍길동",
+      bio: "✨ 나만의 인스타그램 홈\n📸 일상과 취향을 기록합니다.",
+      link: "https://instagram.com",
+      avatar: null,
+      followers: 104820,
+      following: 6
+    };
+
+    let userProfile = defaultProfile;
+    let posts = [];
+    let highlights = [];
+    let activeCommentPostId = null;
+
+    function formatCount(num) {
+      if (!num) return '0';
+      if (num >= 10000) {
+        return (num / 10000).toFixed(1).replace(/\.0$/, '') + '만';
+      }
+      return num.toLocaleString();
+    }
+
+    async function persistAllData() {
+      try {
+        await idbSet('profile', userProfile);
+        await idbSet('posts', posts);
+        await idbSet('highlights', highlights);
+      } catch (err) {
+        console.error("IndexedDB Save Error:", err);
+      }
+    }
+
+    function refreshIcons() {
+      lucide.createIcons();
+    }
+
+    // ==========================================
+    // 탭 전환
+    // ==========================================
+    function switchTab(tab) {
+      const homeView = document.getElementById('view-home');
+      const profileView = document.getElementById('view-profile');
+      const navHome = document.getElementById('nav-btn-home');
+      const navProfile = document.getElementById('nav-btn-profile');
+
+      if (tab === 'home') {
+        homeView.classList.remove('hidden');
+        profileView.classList.add('hidden');
+        navHome.querySelector('i').setAttribute('class', 'w-6 h-6 stroke-[2.5]');
+        navProfile.classList.remove('border-black');
+      } else {
+        homeView.classList.add('hidden');
+        profileView.classList.remove('hidden');
+        navHome.querySelector('i').setAttribute('class', 'w-6 h-6 stroke-[1.8]');
+        navProfile.classList.add('border-black');
+      }
+      refreshIcons();
+    }
+
+    // ==========================================
+    // 프로필 UI 업데이트
+    // ==========================================
+    function updateProfileUI() {
+      document.getElementById('prof-header-username').innerText = userProfile.username;
+      document.getElementById('prof-display-name').innerText = userProfile.name;
+      document.getElementById('prof-display-bio').innerText = userProfile.bio || '';
+      
+      const linkElem = document.getElementById('prof-display-link');
+      const linkText = document.getElementById('prof-display-link-text');
+      if (userProfile.link) {
+        linkElem.classList.remove('hidden');
+        linkElem.href = userProfile.link.startsWith('http') ? userProfile.link : `https://${userProfile.link}`;
+        linkText.innerText = userProfile.link.replace(/^https?:\/\//, '');
+      } else {
+        linkElem.classList.add('hidden');
+      }
+
+      document.getElementById('stat-posts-count').innerText = posts.length;
+      document.getElementById('stat-followers').innerText = formatCount(userProfile.followers);
+      document.getElementById('stat-following').innerText = userProfile.following || 6;
+
+      const avatarImgs = document.querySelectorAll('.user-avatar-img');
+      const avatarFallbacks = document.querySelectorAll('.user-avatar-fallback');
+
+      avatarImgs.forEach(img => {
+        if (userProfile.avatar) {
+          img.src = userProfile.avatar;
+          img.classList.remove('hidden');
+        } else {
+          img.classList.add('hidden');
+        }
+      });
+
+      avatarFallbacks.forEach(fb => {
+        if (userProfile.avatar) {
+          fb.classList.add('hidden');
+        } else {
+          fb.classList.remove('hidden');
+        }
+      });
+
+      refreshIcons();
+    }
+
+    // ==========================================
+    // 인터랙션: 좋아요 & 캐러셀
+    // ==========================================
+    async function toggleLike(id) {
+      const post = posts.find(p => p.id === id);
+      if (post) {
+        post.isLiked = !post.isLiked;
+        post.likes += post.isLiked ? 1 : -1;
+        await persistAllData();
+        renderFeed();
+      }
+    }
+
+    function slideCarousel(postId, direction) {
+      const container = document.getElementById(`carousel-${postId}`);
+      if (container) {
+        const width = container.clientWidth;
+        container.scrollBy({ left: direction * width, behavior: 'smooth' });
+      }
+    }
+
+    function onCarouselScroll(postId, totalImages) {
+      const container = document.getElementById(`carousel-${postId}`);
+      if (!container) return;
+      const index = Math.round(container.scrollLeft / container.clientWidth);
+      
+      const badge = document.getElementById(`badge-${postId}`);
+      if (badge) badge.innerText = `${index + 1}/${totalImages}`;
+
+      const dots = document.querySelectorAll(`.dot-${postId}`);
+      dots.forEach((dot, idx) => {
+        dot.className = (idx === index)
+          ? `dot-${postId} w-1.5 h-1.5 rounded-full bg-blue-500 transition`
+          : `dot-${postId} w-1.5 h-1.5 rounded-full bg-gray-300 transition`;
+      });
+    }
+
+    // ==========================================
+    // 댓글 (읽기 전용 모달)
+    // ==========================================
+    function openCommentsModal(postId) {
+      activeCommentPostId = postId;
+      const post = posts.find(p => p.id === postId);
+      if (!post) return;
+
+      if (!post.comments) post.comments = [];
+
+      const captionHeader = document.getElementById('comments-caption-header');
+      captionHeader.innerHTML = `
+        <div class="w-8 h-8 rounded-full overflow-hidden bg-gray-100 flex-shrink-0 border border-gray-200">
+          ${userProfile.avatar 
+            ? `<img src="${userProfile.avatar}" class="w-full h-full object-cover">` 
+            : `<div class="w-full h-full flex items-center justify-center"><i data-lucide="user" class="w-4 h-4 text-gray-500"></i></div>`
+          }
+        </div>
+        <div class="flex-1 text-xs">
+          <span class="font-bold text-gray-900 mr-1.5">${post.username}</span>
+          <span class="text-gray-800 whitespace-pre-line">${post.caption || ''}</span>
+          <div class="text-[10px] text-gray-400 mt-1">${post.timeAgo}</div>
+        </div>
+      `;
+
+      renderCommentsList(post);
+      document.getElementById('comments-modal').classList.remove('hidden');
+      refreshIcons();
+    }
+
+    function closeCommentsModal() {
+      document.getElementById('comments-modal').classList.add('hidden');
+      activeCommentPostId = null;
+    }
+
+    function renderCommentsList(post) {
+      const commentsList = document.getElementById('comments-list');
+      
+      if (!post.comments || post.comments.length === 0) {
+        commentsList.innerHTML = `
+          <div class="py-12 flex flex-col items-center justify-center text-center text-gray-400">
+            <i data-lucide="message-square" class="w-10 h-10 mb-2 stroke-[1.2]"></i>
+            <span class="text-xs font-semibold">작성된 댓글이 없습니다.</span>
+          </div>
+        `;
+        refreshIcons();
+        return;
+      }
+
+      commentsList.innerHTML = post.comments.map(c => `
+        <div class="flex items-start justify-between gap-2 text-xs">
+          <div class="flex items-start gap-2.5 flex-1">
+            <div class="w-7 h-7 rounded-full bg-gradient-to-tr from-gray-200 to-gray-300 flex-shrink-0 flex items-center justify-center text-[10px] font-bold text-gray-700">
+              ${c.username.slice(0, 2).toUpperCase()}
+            </div>
+            <div class="flex flex-col flex-1">
+              <div>
+                <span class="font-bold text-gray-900 mr-1.5">${c.username}</span>
+                <span class="text-gray-800 break-all">${c.text}</span>
+              </div>
+              <div class="flex items-center gap-3 text-[10px] text-gray-400 mt-1">
+                <span>${c.timeAgo || '방금 전'}</span>
+                <span>좋아요 ${c.likes || 0}개</span>
+              </div>
+            </div>
+          </div>
+          <button onclick="toggleCommentLike(${c.id})" class="pt-1 text-gray-400 hover:text-red-500">
+            <i data-lucide="heart" class="w-3.5 h-3.5 ${c.isLiked ? 'fill-red-500 stroke-red-500 text-red-500' : ''}"></i>
+          </button>
+        </div>
+      `).join('');
+
+      refreshIcons();
+    }
+
+    async function toggleCommentLike(commentId) {
+      if (!activeCommentPostId) return;
+      const post = posts.find(p => p.id === activeCommentPostId);
+      if (!post || !post.comments) return;
+
+      const comment = post.comments.find(c => c.id === commentId);
+      if (comment) {
+        comment.isLiked = !comment.isLiked;
+        comment.likes = (comment.likes || 0) + (comment.isLiked ? 1 : -1);
+        await persistAllData();
+        renderCommentsList(post);
+      }
+    }
+
+    // ==========================================
+    // 스토리 하이라이트 (뷰어)
+    // ==========================================
+    function renderHighlights() {
+      const wrapper = document.getElementById('highlights-wrapper');
+      const list = document.getElementById('highlights-list');
+
+      if (!highlights || highlights.length === 0) {
+        wrapper.classList.add('hidden');
+        return;
+      }
+
+      wrapper.classList.remove('hidden');
+      list.innerHTML = highlights.map(hl => `
+        <div class="flex flex-col items-center gap-1 cursor-pointer flex-shrink-0" onclick="viewHighlight(${hl.id})">
+          <div class="w-16 h-16 rounded-full p-[2px] border border-gray-300 flex items-center justify-center hover:scale-105 transition">
+            <img src="${hl.cover}" class="w-full h-full rounded-full object-cover">
+          </div>
+          <span class="text-[11px] text-gray-700 truncate w-16 text-center">${hl.title}</span>
+        </div>
+      `).join('');
+    }
+
+    function viewHighlight(id) {
+      const hl = highlights.find(h => h.id === id);
+      if (!hl) return;
+
+      const viewer = document.getElementById('highlight-viewer-modal');
+      document.getElementById('viewer-title').innerText = hl.title;
+      document.getElementById('viewer-img').src = hl.cover;
+      
+      const avatarImg = document.getElementById('viewer-avatar');
+      if (userProfile.avatar) {
+        avatarImg.src = userProfile.avatar;
+        avatarImg.classList.remove('hidden');
+      } else {
+        avatarImg.classList.add('hidden');
+      }
+
+      viewer.classList.remove('hidden');
+      refreshIcons();
+    }
+
+    function closeHighlightViewer() {
+      document.getElementById('highlight-viewer-modal').classList.add('hidden');
+    }
+
+    // ==========================================
+    // 피드 & 그리드 렌더링
+    // ==========================================
+    function renderFeed() {
+      const feedContainer = document.getElementById('feed-container');
+      const emptyState = document.getElementById('empty-state');
+
+      if (posts.length === 0) {
+        emptyState.classList.remove('hidden');
+        feedContainer.innerHTML = '';
+        refreshIcons();
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+      feedContainer.innerHTML = posts.map(post => {
+        const imageList = post.images || (post.image ? [post.image] : []);
+        const isMultiple = imageList.length > 1;
+        const commentList = post.comments || [];
+        const count = post.commentCount || 284;
+
+        return `
+        <article class="flex flex-col bg-white">
+          <div class="flex items-center justify-between px-3 py-2.5">
+            <div class="flex items-center gap-2.5">
+              <div class="w-8 h-8 rounded-full overflow-hidden bg-gray-100 border border-gray-200 flex items-center justify-center">
+                ${userProfile.avatar 
+                  ? `<img src="${userProfile.avatar}" class="w-full h-full object-cover">` 
+                  : `<i data-lucide="user" class="w-4 h-4 text-gray-500"></i>`
+                }
+              </div>
+              <span class="font-semibold text-xs text-gray-900">${post.username}</span>
+            </div>
+          </div>
+
+          <div class="relative w-full aspect-square bg-black overflow-hidden group">
+            ${isMultiple ? `
+              <span id="badge-${post.id}" class="absolute top-3 right-3 bg-black/70 text-white text-[11px] px-2.5 py-1 rounded-full z-10 font-medium tracking-wider">
+                1/${imageList.length}
+              </span>
+              <button onclick="slideCarousel(${post.id}, -1)" class="absolute left-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white/80 hover:bg-white text-gray-800 flex items-center justify-center z-10 shadow transition opacity-0 group-hover:opacity-100">
+                <i data-lucide="chevron-left" class="w-4 h-4"></i>
+              </button>
+              <button onclick="slideCarousel(${post.id}, 1)" class="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white/80 hover:bg-white text-gray-800 flex items-center justify-center z-10 shadow transition opacity-0 group-hover:opacity-100">
+                <i data-lucide="chevron-right" class="w-4 h-4"></i>
+              </button>
+            ` : ''}
+
+            <div id="carousel-${post.id}" onscroll="onCarouselScroll(${post.id}, ${imageList.length})" 
+                 class="carousel-container flex w-full h-full overflow-x-auto no-scrollbar">
+              ${imageList.map(img => `
+                <div class="carousel-item w-full h-full flex-shrink-0 flex items-center justify-center bg-black">
+                  <img src="${img}" class="w-full h-full object-cover" alt="Post">
+                </div>
+              `).join('')}
+            </div>
+          </div>
+
+          <div class="flex justify-between items-center px-3 pt-3 pb-1">
+            <div class="flex items-center gap-4">
+              <button onclick="toggleLike(${post.id})" class="transition active:scale-125">
+                <i data-lucide="heart" class="w-6 h-6 stroke-[1.8] ${post.isLiked ? 'fill-red-500 stroke-red-500 text-red-500' : 'text-gray-900'}"></i>
+              </button>
+              <button onclick="openCommentsModal(${post.id})" class="text-gray-900 hover:opacity-60 transition active:scale-110">
+                <i data-lucide="message-circle" class="w-6 h-6 stroke-[1.8]"></i>
+              </button>
+              <button class="text-gray-900"><i data-lucide="send" class="w-6 h-6 stroke-[1.8]"></i></button>
+            </div>
+
+            ${isMultiple ? `
+              <div class="flex items-center gap-1">
+                ${imageList.map((_, idx) => `
+                  <span class="dot-${post.id} w-1.5 h-1.5 rounded-full ${idx === 0 ? 'bg-blue-500' : 'bg-gray-300'} transition"></span>
+                `).join('')}
+              </div>
+            ` : ''}
+
+            <button class="text-gray-900"><i data-lucide="bookmark" class="w-6 h-6 stroke-[1.8]"></i></button>
+          </div>
+
+          <div class="px-3 pb-3 text-xs flex flex-col gap-1">
+            <span class="font-bold text-gray-900">좋아요 ${post.likes.toLocaleString()}개</span>
+            ${post.caption ? `
+              <div>
+                <span class="font-bold text-gray-900 mr-1">${post.username}</span>
+                <span class="text-gray-800">${post.caption}</span>
+              </div>
+            ` : ''}
+
+            <!-- 200~400개 댓글 수치 (클릭 불가) -->
+            <div class="text-gray-400 font-normal mt-0.5 cursor-default select-none pointer-events-none">
+              댓글 ${count}개 모두 보기
+            </div>
+
+            <!-- 내가 작성해둔 댓글들만 나열 -->
+            ${commentList.length > 0 ? `
+              <div class="flex flex-col gap-1 mt-0.5">
+                ${commentList.map(c => `
+                  <div class="break-words">
+                    <span class="font-bold text-gray-900 mr-1.5">${c.username}</span>
+                    <span class="text-gray-800">${c.text}</span>
+                  </div>
+                `).join('')}
+              </div>
+            ` : ''}
+
+            <span class="text-[10px] text-gray-400 mt-1 uppercase">${post.timeAgo}</span>
+          </div>
+        </article>
+        `;
+      }).join('');
+
+      refreshIcons();
+    }
+
+    function renderProfileGrid() {
+      const grid = document.getElementById('profile-grid');
+      const emptyGrid = document.getElementById('profile-empty-grid');
+
+      if (posts.length === 0) {
+        grid.innerHTML = '';
+        emptyGrid.classList.remove('hidden');
+      } else {
+        emptyGrid.classList.add('hidden');
+        grid.innerHTML = posts.map(post => {
+          const imageList = post.images || (post.image ? [post.image] : []);
+          const isMultiple = imageList.length > 1;
+
+          return `
+          <div class="aspect-square bg-gray-100 overflow-hidden relative group">
+            <img src="${imageList[0]}" class="w-full h-full object-cover" alt="Thumb">
+            ${isMultiple ? `
+              <div class="absolute top-1.5 right-1.5 text-white drop-shadow">
+                <i data-lucide="layers" class="w-4 h-4"></i>
+              </div>
+            ` : ''}
+          </div>
+        `;
+        }).join('');
+      }
+      refreshIcons();
+    }
+
+    // ==========================================
+    // 앱 시작: 데이터 로드
+    // ==========================================
+    window.onload = async () => {
+      try {
+        await initIndexedDB();
+
+        const dbProfile = await idbGet('profile');
+        const dbPosts = await idbGet('posts');
+        const dbHighlights = await idbGet('highlights');
+
+        if (dbProfile || dbPosts) {
+          userProfile = dbProfile || defaultProfile;
+          posts = dbPosts || [];
+          highlights = dbHighlights || [];
+        } else {
+          const lsProfile = localStorage.getItem('insta_profile');
+          const lsPosts = localStorage.getItem('insta_posts');
+          const lsHighlights = localStorage.getItem('insta_highlights');
+
+          if (lsProfile) userProfile = JSON.parse(lsProfile);
+          if (lsPosts) posts = JSON.parse(lsPosts);
+          if (lsHighlights) highlights = JSON.parse(lsHighlights);
+        }
+
+        if (!userProfile.followers || userProfile.followers < 90000 || userProfile.followers > 110000) {
+          userProfile.followers = Math.floor(Math.random() * (110000 - 90000 + 1)) + 90000;
+        }
+        userProfile.following = 6;
+
+        posts.forEach(p => {
+          if (!p.likes || p.likes < 30000) {
+            p.likes = Math.floor(Math.random() * (50000 - 30000 + 1)) + 30000;
+          }
+          if (!p.commentCount || p.commentCount < 200 || p.commentCount > 400) {
+            p.commentCount = Math.floor(Math.random() * (400 - 200 + 1)) + 200;
+          }
+          if (!p.comments) {
+            p.comments = [];
+          }
+        });
+
+        await persistAllData();
+      } catch (e) {
+        console.error("Data load error:", e);
+      } finally {
+        updateProfileUI();
+        renderHighlights();
+        renderFeed();
+        renderProfileGrid();
+        refreshIcons();
+      }
+    };
+  </script>
+</body>
+</html>
